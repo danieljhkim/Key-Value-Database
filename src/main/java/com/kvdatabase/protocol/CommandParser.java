@@ -8,18 +8,20 @@ public class CommandParser {
         if (parts.length == 0) return "ERR: Empty command";
 
         String cmd = parts[0].toUpperCase();
-        switch (cmd) {
-            case "SET":
-                if (parts.length != 3) return "ERR: Usage SET key value";
-                return store.set(parts[1], parts[2]);
-            case "GET":
-                if (parts.length != 2) return "ERR: Usage GET key";
-                return store.get(parts[1]);
-            case "DEL":
-                if (parts.length != 2) return "ERR: Usage DEL key";
-                return store.del(parts[1]);
-            default:
-                return "ERR: Unknown command";
-        }
+        return switch (cmd) {
+            case "SET" -> {
+                if (parts.length != 3) yield "ERR: Usage SET key value";
+                yield store.set(parts[1], parts[2]);
+            }
+            case "GET" -> {
+                if (parts.length != 2) yield "ERR: Usage GET key";
+                yield store.get(parts[1]);
+            }
+            case "DEL" -> {
+                if (parts.length != 2) yield "ERR: Usage DEL key";
+                yield store.del(parts[1]);
+            }
+            default -> "ERR: Unknown command";
+        };
     }
 }

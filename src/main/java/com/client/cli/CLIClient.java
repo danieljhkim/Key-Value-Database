@@ -37,11 +37,9 @@ public class CLIClient {
                 if (command.equalsIgnoreCase("exit") || command.equalsIgnoreCase("quit")) {
                     break;
                 }
-
                 if (command.isEmpty()) {
                     continue;
                 }
-
                 String response = executeCommand(command);
                 System.out.println(response);
             }
