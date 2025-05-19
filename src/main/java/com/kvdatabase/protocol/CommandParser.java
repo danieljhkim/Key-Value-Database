@@ -21,6 +21,26 @@ public class CommandParser {
                 if (parts.length != 2) yield "ERR: Usage DEL key";
                 yield store.del(parts[1]);
             }
+            case "EXISTS" -> {
+                if (parts.length != 2) yield "ERR: Usage EXISTS key";
+                yield store.exists(parts[1]) ? "1" : "0";
+            }
+            case "SIZE" -> String.valueOf(store.size());
+            case "CLEAR" -> {
+                store.clear();
+                yield "OK";
+            }
+            case "ALL" -> {
+                StringBuilder sb = new StringBuilder();
+                store.getAll().forEach((k, v) -> sb.append(k).append(":").append(v).append("\n"));
+                yield sb.toString();
+            }
+            case "SHUTDOWN", "QUIT", "TERMINATE" -> {
+                store.shutdown();
+                yield "OK";
+            }
+            case "PING" -> "PONG";
+
             default -> "ERR: Unknown command";
         };
     }

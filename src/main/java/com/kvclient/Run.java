@@ -1,8 +1,8 @@
-package com.client;
+package com.kvclient;
 
-import com.client.cli.CLIClient;
+import com.kvclient.cli.CLIClient;
 
-public class Main {
+public class Run {
     public static void main(String[] args) {
         CLIClient client = new CLIClient();
         client.connect("localhost", 6379);

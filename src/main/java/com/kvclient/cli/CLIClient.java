@@ -1,4 +1,4 @@
-package com.client.cli;
+package com.kvclient.cli;
 
 import java.io.*;
 import java.net.ConnectException;
@@ -11,6 +11,7 @@ import java.util.Scanner;
  */
 public class CLIClient {
     private static final String PROMPT = "> ";
+    private static final String END_MARKER = "END_MARKER";
     private final Scanner scanner;
     private String host;
     private int port;
@@ -18,7 +19,6 @@ public class CLIClient {
     private BufferedReader reader;
     private BufferedWriter writer;
     private boolean connected = false;
-
 
     public CLIClient() {
         this.scanner = new Scanner(System.in);
@@ -58,18 +58,16 @@ public class CLIClient {
         if (port <= 0 || port > 65535) {
             throw new IllegalArgumentException("Invalid port number: " + port);
         }
-
         this.host = host;
         this.port = port;
-
         try {
             this.socket = new Socket(host, port);
             this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.connected = true;
 
-            System.out.println("Connected to Mini Redis on " + host + ":" + port);
-            System.out.println("Type commands like: SET key value, GET key, DEL key");
+            System.out.println("Connected to KV Database on " + host + ":" + port);
+            System.out.println("Type commands like: SET key value, GET key, DEL key, ALL, SIZE, EXIT, PING, CLEAR");
             return true;
         } catch (ConnectException e) {
             System.err.println("Failed to connect to server: " + e.getMessage());
@@ -98,7 +96,6 @@ public class CLIClient {
         }
     }
 
-
     public String sendCommand(String command, String... args) throws IOException {
         if (!isConnected()) {
             return "Error: Not connected to server";
@@ -112,16 +109,40 @@ public class CLIClient {
         return executeCommand(commandBuilder.toString());
     }
 
-
     private String executeCommand(String commandString) throws IOException {
         writer.write(commandString + "\n");
         writer.flush();
-        return reader.readLine();
+
+        StringBuilder response = new StringBuilder();
+        String line;
+        socket.setSoTimeout(3000);
+        try {
+            while ((line = reader.readLine()) != null) {
+                if (line.equals(END_MARKER)) {
+                    break;
+                }
+                if (!response.isEmpty()) {
+                    response.append("\n");
+                }
+                response.append(line);
+                if (!reader.ready()) {
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            if (e.getMessage().contains("Read timed out")) {
+                System.err.println("Server response timed out.");
+            } else {
+                throw e;
+            }
+        } finally {
+            socket.setSoTimeout(0);
+        }
+
+        return response.toString();
     }
 
     public boolean isConnected() {
         return connected && socket != null && !socket.isClosed();
     }
-
-
 }
