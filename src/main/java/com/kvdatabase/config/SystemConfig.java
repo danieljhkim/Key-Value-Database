@@ -20,7 +20,6 @@ public class SystemConfig {
 
     private static SystemConfig INSTANCE;
     private final Properties properties;
-    private volatile Set<String> propertyNamesCache = null;
 
     private SystemConfig() {
         this.properties = new Properties();
@@ -101,41 +100,28 @@ public class SystemConfig {
     }
 
     public String getProperty(String key) {
-        String value = System.getProperty("kvdb." + key);
-        if (value != null && !value.isEmpty()) {
-            return value;
-        }
+        return getProperty(key, null);
+    }
 
-        String envKey = "KVDB_" + key.toUpperCase().replace('.', '_');
-        value = System.getenv(envKey);
-        if (value != null && !value.isEmpty()) {
-            return value;
+    public Set<String> getAllPropertyNames(String prefix) {
+        Set<String> propertyNames = new HashSet<>();
+        for (Object key : properties.keySet()) {
+            propertyNames.add(key.toString());
         }
-
-        return properties.getProperty(key);
+        if (prefix == null || prefix.isEmpty()) {
+            return propertyNames;
+        }
+        Set<String> filteredProperties = new HashSet<>();
+        for (String propName : propertyNames) {
+            if (propName.startsWith(prefix)) {
+                filteredProperties.add(propName);
+            }
+        }
+        return Collections.unmodifiableSet(filteredProperties);
     }
 
     public Set<String> getAllPropertyNames() {
-        if (propertyNamesCache == null) {
-            synchronized (this) {
-                // Double-check locking pattern
-                if (propertyNamesCache == null) {
-                    Set<String> propertyNames = new HashSet<>();
-                    for (Object key : properties.keySet()) {
-                        propertyNames.add(key.toString());
-                    }
-                    // to prevent external modification
-                    propertyNamesCache = Collections.unmodifiableSet(propertyNames);
-                }
-            }
-        }
-        return propertyNamesCache;
+        return getAllPropertyNames(null);
     }
 
-    // call this when properties change during runtime
-    public void invalidatePropertyNamesCache() {
-        synchronized (this) {
-            propertyNamesCache = null;
-        }
-    }
 }
