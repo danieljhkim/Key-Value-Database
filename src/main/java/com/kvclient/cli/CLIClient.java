@@ -1,5 +1,7 @@
 package com.kvclient.cli;
 
+import com.kvclient.utils.Constants;
+
 import java.io.*;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -10,8 +12,7 @@ import java.util.Scanner;
  * Client for interacting with the Redis-like key-value store server via command line.
  */
 public class CLIClient {
-    private static final String PROMPT = "> ";
-    private static final String END_MARKER = "END_MARKER";
+
     private final Scanner scanner;
     private String host;
     private int port;
@@ -31,7 +32,7 @@ public class CLIClient {
         }
         try {
             while (true) {
-                System.out.print(PROMPT);
+                System.out.print(Constants.PROMPT);
                 String command = scanner.nextLine().trim();
 
                 if (command.equalsIgnoreCase("exit") || command.equalsIgnoreCase("quit")) {
@@ -65,9 +66,12 @@ public class CLIClient {
             this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.connected = true;
-
+            System.out.println(Constants.WELCOME_MESSAGE);
             System.out.println("Connected to KV Database on " + host + ":" + port);
-            System.out.println("Type commands like: SET key value, GET key, DEL key, ALL, SIZE, EXIT, PING, CLEAR");
+            System.out.println(Constants.LINE_SEPARATOR);
+            System.out.println(Constants.KV_HELP_MESSAGE);
+            System.out.println(Constants.SQL_HELP_MESSAGE);
+            System.out.println(Constants.LINE_SEPARATOR);
             return true;
         } catch (ConnectException e) {
             System.err.println("Failed to connect to server: " + e.getMessage());
@@ -118,7 +122,7 @@ public class CLIClient {
         socket.setSoTimeout(3000);
         try {
             while ((line = reader.readLine()) != null) {
-                if (line.equals(END_MARKER)) {
+                if (line.equals(Constants.END_MARKER)) {
                     break;
                 }
                 if (!response.isEmpty()) {

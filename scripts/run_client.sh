@@ -1,5 +1,5 @@
 #!/bin/bash
-# client.sh - Script to start the KV Client
+# run_client.sh - Script to start the KV Client
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

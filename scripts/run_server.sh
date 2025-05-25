@@ -1,5 +1,5 @@
 #!/bin/bash
-# server.sh - Script to start the KV Server
+# run_server.sh - Script to start the KV Server
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
