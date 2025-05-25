@@ -1,6 +1,7 @@
 package com.kvdatabase.store;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.kvdatabase.annotations.Timer;
 import com.kvdatabase.persistence.FilePersistenceManager;
 import com.kvdatabase.persistence.PersistenceManager;
 
@@ -28,6 +29,7 @@ public class KeyValueStore {
         loadFromDisk();
     }
 
+    @Timer
     private void loadFromDisk() {
         try {
             Map<String, String> loadedData = persistenceManager.load();
@@ -41,7 +43,7 @@ public class KeyValueStore {
             LOGGER.log(Level.SEVERE, "Failed to load data from disk", e);
         }
     }
-
+    @Timer
     private void saveToDisk() {
         LOGGER.info("Saving data to disk");
         try {
@@ -64,6 +66,7 @@ public class KeyValueStore {
         return OK_RESPONSE;
     }
 
+    @Timer
     public String get(String key) {
         Objects.requireNonNull(key, "Key cannot be null");
         return store.getOrDefault(key, NIL_RESPONSE);

@@ -45,9 +45,7 @@ public class ClientHandler implements Runnable {
             try {
                 String trimmedCommand = command.trim();
                 LOGGER.fine("Command received: " + trimmedCommand);
-
                 String response = CommandParser.process(trimmedCommand, STORE);
-
                 writer.write(response + "\n");
                 writer.flush();
             } catch (Exception e) {
