@@ -23,18 +23,25 @@ public class DatabaseConfig {
     private final Map<String, HikariDataSource> dataSources;
     private final Set<String> availableDatabases;
 
-    private DatabaseConfig() {
+    private DatabaseConfig(String dbName) {
         this.systemConfig = SystemConfig.getInstance();
         this.dataSources = new ConcurrentHashMap<>();
         this.availableDatabases = findAvailableDatabases();
-        if (availableDatabases.contains(DEFAULT_DB)) {
-            initializeDataSource(DEFAULT_DB);
+        if (availableDatabases.contains(dbName)) {
+            initializeDataSource(dbName);
+        } else {
+            LOGGER.warning("No database configuration found for: " + dbName);
+            throw new IllegalArgumentException("No database configuration found for: " + dbName);
         }
     }
 
     public static synchronized DatabaseConfig getInstance() {
+        return getInstance(DEFAULT_DB);
+    }
+
+    public static synchronized DatabaseConfig getInstance(String dbName) {
         if (INSTANCE == null) {
-            INSTANCE = new DatabaseConfig();
+            INSTANCE = new DatabaseConfig(dbName);
         }
         return INSTANCE;
     }
@@ -80,6 +87,10 @@ public class DatabaseConfig {
             LOGGER.log(Level.SEVERE, "Failed to initialize database connection pool for: " + dbName, e);
             throw new RuntimeException("Database configuration error for " + dbName, e);
         }
+    }
+
+    private void initializeDataSource() {
+        initializeDataSource(DEFAULT_DB);
     }
 
     public Connection getConnection() throws SQLException {
@@ -131,7 +142,7 @@ public class DatabaseConfig {
         }
     }
 
-    public String getTableName(String dbName) {
+    public String getDefaultTableName(String dbName) {
         String tableName = systemConfig.getProperty("database." + dbName + ".table");
         return tableName != null ? tableName : "kv_store";
     }

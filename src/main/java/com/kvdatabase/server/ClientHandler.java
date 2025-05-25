@@ -1,6 +1,8 @@
 package com.kvdatabase.server;
 
 import com.kvdatabase.protocol.CommandParser;
+import com.kvdatabase.protocol.KVCommandParser;
+import com.kvdatabase.protocol.SQLCommandParser;
 import com.kvdatabase.store.KeyValueStore;
 import java.io.*;
 import java.net.Socket;
@@ -12,6 +14,9 @@ public class ClientHandler implements Runnable {
 
     private static final Logger LOGGER = Logger.getLogger(ClientHandler.class.getName());
     private static final KeyValueStore STORE = KeyValueStore.getInstance();
+    private static final String SQL_COMMAND = "sql";
+    CommandParser kvCommandParser = new KVCommandParser(STORE);
+    CommandParser sqlCommandParser = new SQLCommandParser();
 
     private final Socket clientSocket;
     private final String clientAddress;
@@ -43,10 +48,15 @@ public class ClientHandler implements Runnable {
         String command;
         while ((command = reader.readLine()) != null) {
             try {
-                String trimmedCommand = command.trim();
-                LOGGER.fine("Command received: " + trimmedCommand);
-                String response = CommandParser.process(trimmedCommand, STORE);
-                writer.write(response + "\n");
+                command = command.trim().toLowerCase();
+                LOGGER.fine("Command received: " + command);
+                if (command.startsWith(SQL_COMMAND)) {
+                    String sqlResponse = sqlCommandParser.process(command);
+                    writer.write(sqlResponse + "\n");
+                } else {
+                    String response = kvCommandParser.process(command);
+                    writer.write(response + "\n");
+                }
                 writer.flush();
             } catch (Exception e) {
                 LOGGER.log(Level.WARNING, "Error processing command", e);

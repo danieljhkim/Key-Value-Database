@@ -15,8 +15,8 @@ public class KvStoreRepository implements BaseRepository {
     private static final int BATCH_SIZE = 100;
 
     private final DatabaseConfig dbConfig;
-    private final String dbName;
-    private final String tableName;
+    private final String DB_NAME = "default";
+    private String tableName;
 
     private static final String SQL_CREATE_TABLE =
             "CREATE TABLE IF NOT EXISTS %s (" +
@@ -38,31 +38,37 @@ public class KvStoreRepository implements BaseRepository {
     private static final String SQL_CLEAR = "DELETE FROM %s";
 
     public KvStoreRepository() {
-        this("default");
-    }
-
-    public KvStoreRepository(String dbName) {
-        this.dbConfig = DatabaseConfig.getInstance();
-        this.dbName = dbName;
-        this.tableName = dbConfig.getTableName(dbName);
+        this.dbConfig = DatabaseConfig.getInstance(DB_NAME);
+        this.tableName = dbConfig.getDefaultTableName(DB_NAME);
         initializeTable();
     }
 
-    private void initializeTable() {
-        try (Connection conn = dbConfig.getConnection(dbName);
+    public KvStoreRepository(String tableName) {
+        this.dbConfig = DatabaseConfig.getInstance(DB_NAME);
+        this.tableName = tableName;
+        initializeTable(tableName);
+    }
+
+    public void initializeTable(String tableName) {
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              Statement stmt = conn.createStatement()) {
             stmt.execute(String.format(SQL_CREATE_TABLE, tableName));
             LOGGER.info("Initialized table: " + tableName);
+            this.tableName = tableName;
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Failed to initialize table: " + tableName, e);
             throw new DatabaseException("Failed to initialize table", e);
         }
     }
 
+    public void initializeTable() {
+        initializeTable(tableName);
+    }
+
     @Override
     @Timer
     public boolean put(String key, String value) {
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              PreparedStatement pstmt = conn.prepareStatement(String.format(SQL_PUT, tableName))) {
             pstmt.setString(1, key);
             pstmt.setString(2, value);
@@ -83,7 +89,7 @@ public class KvStoreRepository implements BaseRepository {
         if (key == null) {
             return null;
         }
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              PreparedStatement pstmt = conn.prepareStatement(String.format(SQL_GET, tableName))) {
             pstmt.setString(1, key);
 
@@ -103,7 +109,7 @@ public class KvStoreRepository implements BaseRepository {
         if (key == null) {
             return false;
         }
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              PreparedStatement pstmt = conn.prepareStatement(String.format(SQL_UPDATE, tableName))) {
             pstmt.setString(1, value);
             pstmt.setString(2, key);
@@ -124,7 +130,7 @@ public class KvStoreRepository implements BaseRepository {
         if (key == null) {
             return false;
         }
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              PreparedStatement pstmt = conn.prepareStatement(String.format(SQL_DELETE, tableName))) {
             pstmt.setString(1, key);
             int rows = pstmt.executeUpdate();
@@ -144,7 +150,7 @@ public class KvStoreRepository implements BaseRepository {
         if (key == null) {
             return false;
         }
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              PreparedStatement pstmt = conn.prepareStatement(String.format(SQL_EXISTS, tableName))) {
             pstmt.setString(1, key);
 
@@ -161,7 +167,7 @@ public class KvStoreRepository implements BaseRepository {
     @Timer
     public List<String> getAllKeys() {
         List<String> keys = new ArrayList<>();
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(String.format(SQL_GET_ALL_KEYS, tableName))) {
             while (rs.next()) {
@@ -189,7 +195,7 @@ public class KvStoreRepository implements BaseRepository {
             placeholders.append(i > 0 ? ",?" : "?");
         }
         String sql = "SELECT key, value FROM " + tableName + " WHERE key IN (" + placeholders + ")";
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             for (int i = 0; i < keys.size(); i++) {
@@ -218,7 +224,7 @@ public class KvStoreRepository implements BaseRepository {
 
     @Override
     public int clear() {
-        try (Connection conn = dbConfig.getConnection(dbName);
+        try (Connection conn = dbConfig.getConnection(DB_NAME);
              Statement stmt = conn.createStatement()) {
             int result = stmt.executeUpdate(String.format(SQL_CLEAR, tableName));
             if (!conn.getAutoCommit()) {
@@ -229,5 +235,18 @@ public class KvStoreRepository implements BaseRepository {
             LOGGER.log(Level.SEVERE, "Failed to clear table: " + tableName, e);
             return 0;
         }
+    }
+
+    @Override
+    public boolean isHealthy() {
+        return dbConfig.isHealthy(DB_NAME);
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public String getTableName() {
+        return tableName;
     }
 }

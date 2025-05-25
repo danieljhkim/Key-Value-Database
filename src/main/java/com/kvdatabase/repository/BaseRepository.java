@@ -12,4 +12,7 @@ public interface BaseRepository {
     List<String> getAllKeys();
     Map<String, String> getMultiple(List<String> keys);
     int clear();
+    boolean isHealthy();
+    String getTableName();
+    void initializeTable(String tableName);
 }
