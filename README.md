@@ -9,6 +9,9 @@ Supports both client-server architecture & interactive SQL and key-value command
 
 --- 
 
+## CLI Preview
+![Lucid Search Engine GUI](assets/img.png)
+
 ## Usage
 
 ### Prerequisites
