@@ -2,6 +2,7 @@ package com.kvdatabase.store;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kvdatabase.annotations.Timer;
+import com.kvdatabase.config.SystemConfig;
 import com.kvdatabase.persistence.FilePersistenceManager;
 import com.kvdatabase.persistence.PersistenceManager;
 
@@ -14,19 +15,28 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class KeyValueStore {
+
     private static final Logger LOGGER = Logger.getLogger(KeyValueStore.class.getName());
+    private static final SystemConfig config = SystemConfig.getInstance();
     private static final String OK_RESPONSE = "OK";
     private static final String NIL_RESPONSE = "(nil)";
-    private static final String DEFAULT_PERSISTENCE_FILE = "data/kvstore.dat";
-
     private static final KeyValueStore INSTANCE = new KeyValueStore();
+    private static final int FLUSH_INTERVAL = Integer.parseInt(config.getProperty("kvdb.persistence.autoFlushInterval", "1000"));
+    private static final boolean ENABLE_AUTO_FLUSH = Boolean.parseBoolean(config.getProperty("kvdb.persistence.enableAutoFlush", "true"));
+    private static int curFlushInterval = 0;
     private final Map<String, String> store = new ConcurrentHashMap<>();
     private final PersistenceManager<Map<String, String>> persistenceManager;
 
     private KeyValueStore() {
         TypeReference<Map<String, String>> typeRef = new TypeReference<>() {};
-        this.persistenceManager = new FilePersistenceManager<>(DEFAULT_PERSISTENCE_FILE, typeRef);
+        String persistenceFilePath = config.getProperty("kvdb.persistence.filepath");
+        this.persistenceManager = new FilePersistenceManager<>(persistenceFilePath, typeRef);
         loadFromDisk();
+        System.out.println(FLUSH_INTERVAL);
+    }
+
+    public static KeyValueStore getInstance() {
+        return INSTANCE;
     }
 
     @Timer
@@ -43,26 +53,24 @@ public class KeyValueStore {
             LOGGER.log(Level.SEVERE, "Failed to load data from disk", e);
         }
     }
+
     @Timer
     private void saveToDisk() {
         LOGGER.info("Saving data to disk");
         try {
             persistenceManager.save(store);
+            curFlushInterval = 0;
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to save data to disk", e);
         }
     }
 
-    public static KeyValueStore getInstance() {
-        return INSTANCE;
-    }
-
     public String set(String key, String value) {
         Objects.requireNonNull(key, "Key cannot be null");
         Objects.requireNonNull(value, "Value cannot be null");
-
         store.put(key, value);
-        saveToDisk();
+        curFlushInterval++;
+        flush();
         return OK_RESPONSE;
     }
 
@@ -74,11 +82,9 @@ public class KeyValueStore {
 
     public String del(String key) {
         Objects.requireNonNull(key, "Key cannot be null");
-        String result = store.remove(key) != null ? "1" : "0";
-        if (result.equals("1")) {
-            saveToDisk();
-        }
-        return result;
+        curFlushInterval++;
+        flush();
+        return store.remove(key) != null ? "1" : "0";
     }
 
     public int size() {
@@ -97,6 +103,13 @@ public class KeyValueStore {
 
     public Map<String, String> getAll() {
         return Collections.unmodifiableMap(store);
+    }
+
+    public void flush() {
+        if (ENABLE_AUTO_FLUSH && curFlushInterval >= FLUSH_INTERVAL) {
+            LOGGER.info("Auto-flushing data to disk");
+            saveToDisk();
+        }
     }
 
     public void shutdown() {
