@@ -2,7 +2,6 @@ package com.kvdatabase.store;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kvdatabase.annotations.Timer;
-import com.kvdatabase.config.SystemConfig;
 import com.kvdatabase.persistence.FilePersistenceManager;
 import com.kvdatabase.persistence.PersistenceManager;
 
@@ -13,6 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import com.kvcommon.config.SystemConfig;
 
 public class KeyValueStore {
 

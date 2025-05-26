@@ -1,4 +1,4 @@
-package com.kvdatabase.config;
+package com.kvcommon.config;
 
 import java.io.FileInputStream;
 import java.io.IOException;

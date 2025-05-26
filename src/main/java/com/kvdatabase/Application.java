@@ -1,6 +1,6 @@
 package com.kvdatabase;
 
-import com.kvdatabase.config.SystemConfig;
+import com.kvcommon.config.SystemConfig;
 import com.kvdatabase.server.KVServer;
 
 public class Application {
