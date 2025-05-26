@@ -1,21 +1,35 @@
 package com.kvdatabase;
 
 import com.kvcommon.config.SystemConfig;
+import com.kvdatabase.server.KVGrpcServer;
 import com.kvdatabase.server.KVServer;
 
 public class Application {
     private static final int DEFAULT_PORT = 6379;
+    private static final int DEFAULT_GRPC_PORT = 9001;
     static SystemConfig config = SystemConfig.getInstance();
+
     public static void main(String[] args) {
-        int port;
         try {
-            port = Integer.parseInt(config.getProperty("kvdb.server.port", String.valueOf(DEFAULT_PORT)));
-        } catch (NumberFormatException ex) {
-            System.out.println("Warning: Invalid port configuration. Using default port: " + DEFAULT_PORT);
-            port = DEFAULT_PORT;
+            if (args.length > 0 && "grpc".equalsIgnoreCase(args[0])) {
+                startGrpcServer(args);
+            } else {
+                startServer(args);
+            }
+        } catch (Exception e) {
+            System.out.println("Server Failed to Start");
+            e.printStackTrace();
+            System.exit(1);
         }
-        System.out.println("Starting KV Server on port " + port + "...");
-        KVServer server = new KVServer(port);
-        server.start();
+    }
+
+    public static void startServer(String[] args) throws Exception {
+        int port = Integer.parseInt(config.getProperty("server.port", String.valueOf(DEFAULT_PORT)));
+        new KVServer(port).start();
+    }
+
+    public static void startGrpcServer(String[] args) throws Exception {
+        int port = Integer.parseInt(config.getProperty("server.port", String.valueOf(DEFAULT_GRPC_PORT)));
+        new KVGrpcServer(port).start();
     }
 }

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.kvcommon.proto";
+option java_outer_classname = "KVStoreProto";
+
+package kvstore;
+
+service KVService {
+  rpc Get (KeyRequest) returns (ValueResponse);
+  rpc Set (KeyValueRequest) returns (SetResponse);
+}
+
+message KeyRequest {
+  string key = 1;
+}
+
+message KeyValueRequest {
+  string key = 1;
+  string value = 2;
+}
+
+message ValueResponse {
+  string value = 1;
+}
+
+message SetResponse {
+  bool success = 1;
+}
