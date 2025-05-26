@@ -3,7 +3,7 @@ package com.kvdatabase.server;
 import com.kvdatabase.protocol.CommandParser;
 import com.kvdatabase.protocol.KVCommandParser;
 import com.kvdatabase.protocol.SQLCommandParser;
-import com.kvdatabase.store.KeyValueStore;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.logging.Level;
@@ -13,13 +13,11 @@ import java.util.logging.Logger;
 public class ClientHandler implements Runnable {
 
     private static final Logger LOGGER = Logger.getLogger(ClientHandler.class.getName());
-    private static final KeyValueStore STORE = KeyValueStore.getInstance();
-    private static final String SQL_COMMAND = "sql";
-    CommandParser kvCommandParser = new KVCommandParser(STORE);
-    CommandParser sqlCommandParser = new SQLCommandParser();
-
+    private static final String SQL_COMMAND = "SQL";
     private final Socket clientSocket;
     private final String clientAddress;
+    CommandParser kvCommandParser = new KVCommandParser();
+    CommandParser sqlCommandParser = new SQLCommandParser();
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -48,13 +46,18 @@ public class ClientHandler implements Runnable {
         String command;
         while ((command = reader.readLine()) != null) {
             try {
-                command = command.trim().toLowerCase();
+                String[] parts = command.split(" ");
+                if (parts.length == 0 || parts[0].isEmpty()) {
+                    sendErrorResponse(writer, "Empty command received");
+                    continue;
+                }
+                parts[0] = parts[0].toUpperCase();
                 LOGGER.fine("Command received: " + command);
-                if (command.startsWith(SQL_COMMAND)) {
-                    String sqlResponse = sqlCommandParser.process(command);
+                if (parts[0].equals(SQL_COMMAND)) {
+                    String sqlResponse = sqlCommandParser.process(parts);
                     writer.write(sqlResponse + "\n");
                 } else {
-                    String response = kvCommandParser.process(command);
+                    String response = kvCommandParser.process(parts);
                     writer.write(response + "\n");
                 }
                 writer.flush();

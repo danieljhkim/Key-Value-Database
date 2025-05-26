@@ -1,33 +1,32 @@
-package com.kvdatabase.store;
+package com.kvdatabase.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.kvcommon.config.SystemConfig;
 import com.kvdatabase.annotations.Timer;
 import com.kvdatabase.persistence.FilePersistenceManager;
 import com.kvdatabase.persistence.PersistenceManager;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.kvcommon.config.SystemConfig;
 
-public class KeyValueStore {
+public class KVStore implements KVStorageBase {
 
-    private static final Logger LOGGER = Logger.getLogger(KeyValueStore.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(KVStore.class.getName());
     private static final SystemConfig config = SystemConfig.getInstance();
     private static final String OK_RESPONSE = "OK";
     private static final String NIL_RESPONSE = "(nil)";
-    private static final KeyValueStore INSTANCE = new KeyValueStore();
+    private static final KVStore INSTANCE = new KVStore();
     private static final int FLUSH_INTERVAL = Integer.parseInt(config.getProperty("kvdb.persistence.autoFlushInterval", "1000"));
     private static final boolean ENABLE_AUTO_FLUSH = Boolean.parseBoolean(config.getProperty("kvdb.persistence.enableAutoFlush", "true"));
+    private static final String tableName = config.getProperty("kvdb.persistence.table.name", "default");
     private static int curFlushInterval = 0;
     private final Map<String, String> store = new ConcurrentHashMap<>();
     private final PersistenceManager<Map<String, String>> persistenceManager;
 
-    private KeyValueStore() {
+    private KVStore() {
         TypeReference<Map<String, String>> typeRef = new TypeReference<>() {};
         String persistenceFilePath = config.getProperty("kvdb.persistence.filepath");
         this.persistenceManager = new FilePersistenceManager<>(persistenceFilePath, typeRef);
@@ -35,7 +34,7 @@ public class KeyValueStore {
         System.out.println(FLUSH_INTERVAL);
     }
 
-    public static KeyValueStore getInstance() {
+    public static synchronized KVStore getInstance() {
         return INSTANCE;
     }
 
@@ -65,13 +64,13 @@ public class KeyValueStore {
         }
     }
 
-    public String set(String key, String value) {
+    public boolean set(String key, String value) {
         Objects.requireNonNull(key, "Key cannot be null");
         Objects.requireNonNull(value, "Value cannot be null");
         store.put(key, value);
         curFlushInterval++;
         flush();
-        return OK_RESPONSE;
+        return true;
     }
 
     @Timer
@@ -80,20 +79,23 @@ public class KeyValueStore {
         return store.getOrDefault(key, NIL_RESPONSE);
     }
 
-    public String del(String key) {
+    public boolean del(String key) {
         Objects.requireNonNull(key, "Key cannot be null");
         curFlushInterval++;
         flush();
-        return store.remove(key) != null ? "1" : "0";
+        return store.remove(key) != null;
     }
 
     public int size() {
         return store.size();
     }
 
-    public void clear() {
+    public int clear() {
+        LOGGER.info("Clearing the KVStore");
+        int sizeBeforeClear = store.size();
         store.clear();
         saveToDisk();
+        return sizeBeforeClear;
     }
 
     public boolean exists(String key) {
@@ -105,13 +107,28 @@ public class KeyValueStore {
         return Collections.unmodifiableMap(store);
     }
 
+    public List<String> getAllKeys() {
+        return List.copyOf(store.keySet());
+    }
+
+    public Map<String, String> getMultiple(List<String> keys) {
+        Objects.requireNonNull(keys, "Keys cannot be null");
+        Map<String, String> result = new HashMap<>();
+        for (String key : keys) {
+            if (store.containsKey(key)) {
+                result.put(key, store.get(key));
+            }
+        }
+        return result;
+    }
+
     public void flush() {
         if (ENABLE_AUTO_FLUSH && curFlushInterval >= FLUSH_INTERVAL) {
             LOGGER.info("Auto-flushing data to disk");
             saveToDisk();
         }
     }
-
+    @Override
     public void shutdown() {
         saveToDisk();
         try {
@@ -120,4 +137,14 @@ public class KeyValueStore {
             LOGGER.log(Level.WARNING, "Error closing persistence manager", e);
         }
     }
+
+    public void initialize(String tableName) {
+        LOGGER.info("Initializing KVStore with table name: " + tableName);
+        // TODO: implement multi-table support if needed
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
 }

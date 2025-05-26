@@ -1,10 +1,12 @@
 package com.kvdatabase.protocol;
 
-import com.kvdatabase.store.KeyValueStore;
+import com.kvdatabase.repository.BaseRepository;
+import com.kvdatabase.repository.KVStoreRepository;
 
-public class KVCommandParser implements CommandParser {
+public class KVCommandParser extends CommandParser {
 
-    private static final String HELP_TEXT = """
+    private static final String HELP_TEXT =
+            """
         KV Command Parser Usage:
         SET [key] [value] - Store a key-value pair
         GET [key] - Retrieve value for a given key
@@ -17,58 +19,66 @@ public class KVCommandParser implements CommandParser {
         SHUTDOWN/QUIT/TERMINATE - Close the database connection
         HELP/INFO - Display this help message""";
 
-    private KeyValueStore dataSource;
-
-    public KVCommandParser(KeyValueStore store) {
-        this.dataSource = store;
+    public KVCommandParser(BaseRepository store) {
+        super(store);
     }
 
-    public void setDataSource(KeyValueStore store) {
-        this.dataSource = store;
+    public KVCommandParser() {
+        super(new KVStoreRepository());
     }
+
     @Override
-    public String process(String command) {
-        String[] parts = command.split(" ");
-        if (parts.length == 0) return "ERR: Empty command";
-
-        String cmd = parts[0].toUpperCase();
+    String executeCommand(String[] parts) {
+        String cmd = parts[0].trim().toUpperCase();
         return switch (cmd) {
             case "HELP", "INFO" -> HELP_TEXT;
-            case "SET" -> {
-                if (parts.length != 3) yield "ERR: Usage: SET key value";
-                yield dataSource.set(parts[1], parts[2]);
-            }
-            case "GET" -> {
-                if (parts.length != 2) yield "ERR: Usage: GET key";
-                yield dataSource.get(parts[1]);
-            }
-            case "DEL" -> {
-                if (parts.length != 2) yield "ERR: Usage: DEL key";
-                yield dataSource.del(parts[1]);
-            }
-            case "EXISTS" -> {
-                if (parts.length != 2) yield "ERR: Usage: EXISTS key";
-                yield dataSource.exists(parts[1]) ? "1" : "0";
-            }
-            case "SIZE" -> String.valueOf(dataSource.size());
-            case "CLEAR" -> {
-                dataSource.clear();
-                yield "OK";
-            }
-            case "ALL" -> {
-                StringBuilder sb = new StringBuilder();
-                dataSource.getAll().forEach((k, v) -> sb.append(k).append(":").append(v).append("\n"));
-                yield sb.toString();
-            }
-            case "SHUTDOWN", "QUIT", "TERMINATE" -> {
-                dataSource.shutdown();
-                yield "OK";
-            }
-            case "PING" -> "PONG";
-
+            case "SET" -> handleSet(parts);
+            case "GET" -> handleGet(parts);
+            case "DEL" -> handleDelete(parts);
+            case "EXISTS" -> handleExists(parts);
+            case "DROP" -> handleDrop();
+            case "SHUTDOWN", "QUIT", "TERMINATE" -> handleShutdown();
+            case "PING" -> handlePing();
             default -> "ERR: Unknown command";
         };
     }
 
+    private String handleSet(String[] parts) {
+        if (parts.length != 3) return "ERR: Usage: SET key value";
+        return String.valueOf(dataSource.put(parts[1], parts[2]));
+    }
 
+    private String handleGet(String[] parts) {
+        if (parts.length != 2) return "ERR: Usage: GET key";
+        return dataSource.get(parts[1]);
+    }
+
+    private String handleDelete(String[] parts) {
+        if (parts.length != 2) return "ERR: Usage: DEL key";
+        return String.valueOf(dataSource.delete(parts[1]));
+    }
+
+    private String handleExists(String[] parts) {
+        if (parts.length != 2) return "ERR: Usage: EXISTS key";
+        return dataSource.exists(parts[1]) ? "1" : "0";
+    }
+
+    private String handleDrop() {
+        dataSource.truncate();
+        return "OK";
+    }
+
+    private String handleShutdown() {
+        dataSource.shutdown();
+        return "OK";
+    }
+
+    private String handlePing() {
+        return "PONG";
+    }
+
+    @Override
+    public String getHelpText() {
+        return HELP_TEXT;
+    }
 }

@@ -1,4 +1,4 @@
-package com.kvdatabase.exception;
+package com.kvcommon.exception;
 
 public class DatabaseException extends RuntimeException {
     public DatabaseException(String message) {

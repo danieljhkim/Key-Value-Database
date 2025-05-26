@@ -1,7 +1,7 @@
 package com.kvclient;
 
 import com.kvclient.cli.CLIClient;
-import com.kvdatabase.config.SystemConfig;
+import com.kvcommon.config.SystemConfig;
 
 public class Run {
     private static final String DEFAULT_HOST = "localhost";

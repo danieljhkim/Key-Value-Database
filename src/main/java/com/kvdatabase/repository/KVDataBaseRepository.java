@@ -1,20 +1,20 @@
 package com.kvdatabase.repository;
 
 import com.kvdatabase.annotations.Timer;
-import com.kvdatabase.config.DatabaseConfig;
-import com.kvdatabase.exception.DatabaseException;
+import com.kvcommon.exception.DatabaseException;
+import com.kvdatabase.storage.KVDatabase;
 
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class KvStoreRepository implements BaseRepository {
+public class KVDataBaseRepository implements BaseRepository {
 
-    private static final Logger LOGGER = Logger.getLogger(KvStoreRepository.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(KVDataBaseRepository.class.getName());
     private static final int BATCH_SIZE = 100;
 
-    private final DatabaseConfig dbConfig;
+    private final KVDatabase dbConfig;
     private final String DB_NAME = "default";
     private String tableName;
 
@@ -37,19 +37,19 @@ public class KvStoreRepository implements BaseRepository {
     private static final String SQL_GET_ALL_KEYS = "SELECT key FROM %s";
     private static final String SQL_CLEAR = "DELETE FROM %s";
 
-    public KvStoreRepository() {
-        this.dbConfig = DatabaseConfig.getInstance(DB_NAME);
+    public KVDataBaseRepository() {
+        this.dbConfig = KVDatabase.getInstance(DB_NAME);
         this.tableName = dbConfig.getDefaultTableName(DB_NAME);
-        initializeTable();
+        initialize();
     }
 
-    public KvStoreRepository(String tableName) {
-        this.dbConfig = DatabaseConfig.getInstance(DB_NAME);
+    public KVDataBaseRepository(String tableName) {
+        this.dbConfig = KVDatabase.getInstance(DB_NAME);
         this.tableName = tableName;
-        initializeTable(tableName);
+        initialize(tableName);
     }
 
-    public void initializeTable(String tableName) {
+    public void initialize(String tableName) {
         try (Connection conn = dbConfig.getConnection(DB_NAME);
              Statement stmt = conn.createStatement()) {
             stmt.execute(String.format(SQL_CREATE_TABLE, tableName));
@@ -61,11 +61,10 @@ public class KvStoreRepository implements BaseRepository {
         }
     }
 
-    public void initializeTable() {
-        initializeTable(tableName);
+    public void initialize() {
+        initialize(tableName);
     }
 
-    @Override
     @Timer
     public boolean put(String key, String value) {
         try (Connection conn = dbConfig.getConnection(DB_NAME);
@@ -223,7 +222,7 @@ public class KvStoreRepository implements BaseRepository {
     }
 
     @Override
-    public int clear() {
+    public int truncate() {
         try (Connection conn = dbConfig.getConnection(DB_NAME);
              Statement stmt = conn.createStatement()) {
             int result = stmt.executeUpdate(String.format(SQL_CLEAR, tableName));
@@ -248,5 +247,15 @@ public class KvStoreRepository implements BaseRepository {
 
     public String getTableName() {
         return tableName;
+    }
+
+    @Override
+    public void shutdown() {
+        try {
+            dbConfig.shutdown();
+            LOGGER.info("Database connection closed for table: " + tableName);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to close database connection", e);
+        }
     }
 }

@@ -1,7 +1,9 @@
-package com.kvdatabase.config;
+package com.kvdatabase.storage;
 
+import com.kvcommon.config.SystemConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -11,20 +13,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.kvcommon.config.SystemConfig;
 
-public class DatabaseConfig {
-
-    private static final Logger LOGGER = Logger.getLogger(DatabaseConfig.class.getName());
+public class KVDatabase implements KVStorageBase {
+    private static final Logger LOGGER = Logger.getLogger(KVDatabase.class.getName());
     private static final String DEFAULT_DB = "default";
     private static final String DB_PREFIX = "kvdb.database.";
-    private static DatabaseConfig INSTANCE;
+    private static KVDatabase INSTANCE;
 
     private final SystemConfig systemConfig;
     private final Map<String, HikariDataSource> dataSources;
     private final Set<String> availableDatabases;
 
-    private DatabaseConfig(String dbName) {
+    private KVDatabase(String dbName) {
         this.systemConfig = SystemConfig.getInstance();
         this.dataSources = new ConcurrentHashMap<>();
         this.availableDatabases = findAvailableDatabases();
@@ -36,13 +36,13 @@ public class DatabaseConfig {
         }
     }
 
-    public static synchronized DatabaseConfig getInstance() {
+    public static synchronized KVDatabase getInstance() {
         return getInstance(DEFAULT_DB);
     }
 
-    public static synchronized DatabaseConfig getInstance(String dbName) {
+    public static synchronized KVDatabase getInstance(String dbName) {
         if (INSTANCE == null) {
-            INSTANCE = new DatabaseConfig(dbName);
+            INSTANCE = new KVDatabase(dbName);
         }
         return INSTANCE;
     }
@@ -51,8 +51,9 @@ public class DatabaseConfig {
         Set<String> databases = new HashSet<>();
         for (String propName : systemConfig.getAllPropertyNames()) {
             if (propName.startsWith(DB_PREFIX) && propName.contains(".url")) {
-                String dbName = propName.substring(DB_PREFIX.length(),
-                        propName.length() - 4); // remove ".url"
+                String dbName =
+                        propName.substring(
+                                DB_PREFIX.length(), propName.length() - 4); // remove ".url"
                 databases.add(dbName);
                 LOGGER.info("Found database configuration for: " + dbName);
             }
@@ -72,20 +73,24 @@ public class DatabaseConfig {
             config.setPassword(systemConfig.getProperty(prefix + "password"));
             config.setDriverClassName(systemConfig.getProperty(prefix + "driver"));
 
-            config.setMaximumPoolSize(Integer.parseInt(
-                    systemConfig.getProperty(prefix + "pool.maxSize", "10")));
-            config.setMinimumIdle(Integer.parseInt(
-                    systemConfig.getProperty(prefix + "pool.minIdle", "5")));
-            config.setIdleTimeout(Long.parseLong(
-                    systemConfig.getProperty(prefix + "pool.idleTimeout", "30000")));
-            config.setConnectionTimeout(Long.parseLong(
-                    systemConfig.getProperty(prefix + "pool.connectionTimeout", "30000")));
+            config.setMaximumPoolSize(
+                    Integer.parseInt(systemConfig.getProperty(prefix + "pool.maxSize", "10")));
+            config.setMinimumIdle(
+                    Integer.parseInt(systemConfig.getProperty(prefix + "pool.minIdle", "5")));
+            config.setIdleTimeout(
+                    Long.parseLong(systemConfig.getProperty(prefix + "pool.idleTimeout", "30000")));
+            config.setConnectionTimeout(
+                    Long.parseLong(
+                            systemConfig.getProperty(prefix + "pool.connectionTimeout", "30000")));
 
             HikariDataSource dataSource = new HikariDataSource(config);
             dataSources.put(dbName, dataSource);
             LOGGER.info("Database connection pool initialized for: " + dbName);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to initialize database connection pool for: " + dbName, e);
+            LOGGER.log(
+                    Level.SEVERE,
+                    "Failed to initialize database connection pool for: " + dbName,
+                    e);
             throw new RuntimeException("Database configuration error for " + dbName, e);
         }
     }
@@ -110,7 +115,10 @@ public class DatabaseConfig {
         try {
             return dataSources.get(dbName).getConnection();
         } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "Failed to get connection for " + dbName + ", attempting to reinitialize", e);
+            LOGGER.log(
+                    Level.WARNING,
+                    "Failed to get connection for " + dbName + ", attempting to reinitialize",
+                    e);
             reinitializeDataSource(dbName);
             return dataSources.get(dbName).getConnection();
         }
@@ -152,7 +160,7 @@ public class DatabaseConfig {
         return availableDatabases;
     }
 
-    public static void shutdown() {
+    public void shutdown() {
         if (INSTANCE != null) {
             for (String dbName : INSTANCE.dataSources.keySet()) {
                 INSTANCE.closeDataSource(dbName);
