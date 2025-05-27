@@ -1,6 +1,6 @@
 package com.kvdatabase.repository;
 
-import com.kvdatabase.annotations.Timer;
+import com.kvcommon.annotations.Timer;
 import com.kvcommon.exception.DatabaseException;
 import com.kvdatabase.storage.KVDatabase;
 

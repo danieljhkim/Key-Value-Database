@@ -1,4 +1,4 @@
-package com.kvdatabase.protocol;
+package com.kvcommon.protocol;
 
 import com.kvdatabase.repository.BaseRepository;
 import com.kvdatabase.repository.KVDataBaseRepository;
@@ -20,19 +20,23 @@ public class SQLCommandParser extends CommandParser {
     private static final String INIT_TABLE_WARNING =
             "WARNING: default table initialized. Use 'SQL USE [table_name]' to initialize a different table.";
 
+    public SQLCommandParser(CommandExecutor executor) {
+        super(executor);
+    }
+    
     public SQLCommandParser(BaseRepository repo) {
-        super(repo);
+        super(new BaseRepositoryAdapter(repo));
     }
 
     public SQLCommandParser() {
-        super(new KVDataBaseRepository());
+        super(new BaseRepositoryAdapter(new KVDataBaseRepository()));
     }
 
     @Override
     String executeCommand(String[] parts) {
         String cmd = parts[1].trim().toUpperCase();
-        if (!cmd.equals("INIT") && dataSource == null) {
-            this.dataSource = new KVDataBaseRepository();
+        if (!cmd.equals("INIT") && executor == null) {
+            this.executor = new BaseRepositoryAdapter(new KVDataBaseRepository());
             return INIT_TABLE_WARNING;
         }
         cmd = cmd.trim().toUpperCase();
@@ -51,41 +55,42 @@ public class SQLCommandParser extends CommandParser {
 
     private String handleInit(String[] parts) {
         if (parts.length == 3) {
-            this.dataSource = new KVDataBaseRepository(parts[2]);
-            return "OK: Table initialized: " + dataSource.getTableName();
+            KVDataBaseRepository repo = new KVDataBaseRepository(parts[2]);
+            this.executor = new BaseRepositoryAdapter(repo);
+            return "OK: Table initialized: " + executor.getTableName();
         }
         return "ERR: Usage: INIT [table_name]";
     }
 
     private String handleUse(String[] parts) {
         if (parts.length != 3) return "ERR: Usage: USE [table_name]";
-        dataSource.initialize(parts[2]);
-        return "OK: Table initialized: " + dataSource.getTableName();
+        executor.initialize(parts[2]);
+        return "OK: Table initialized: " + executor.getTableName();
     }
 
     private String handleGet(String[] parts) {
         if (parts.length != 3) return "ERR: Usage: GET [key]";
-        return String.valueOf(dataSource.get(parts[2]));
+        return String.valueOf(executor.get(parts[2]));
     }
 
     private String handleSet(String[] parts) {
         if (parts.length != 4) return "ERR: Usage: SET [key] [value]";
-        return String.valueOf(dataSource.put(parts[2], parts[3]));
+        return String.valueOf(executor.put(parts[2], parts[3]));
     }
 
     private String handleDelete(String[] parts) {
         if (parts.length != 3) return "ERR: Usage: DEL [key]";
-        return String.valueOf(dataSource.delete(parts[2]));
+        return String.valueOf(executor.delete(parts[2]));
     }
 
     private String handleClear() {
-        int res = dataSource.truncate();
+        int res = executor.truncate();
         if (res == 0) return "ERR: No keys to delete";
-        return "OK: " + dataSource.getTableName() + " cleared";
+        return "OK: " + executor.getTableName() + " cleared";
     }
 
     private String handlePing() {
-        return dataSource.isHealthy() ? "PONG" : "ERR: No connection";
+        return executor.isHealthy() ? "PONG" : "ERR: No connection";
     }
 
     @Override

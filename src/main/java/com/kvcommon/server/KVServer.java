@@ -1,4 +1,7 @@
-package com.kvdatabase.server;
+package com.kvcommon.server;
+
+import com.kvcommon.handler.ClientHandlerFactory;
+import com.kvcommon.handler.DefaultClientHandlerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -9,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class KVServer {
+public class KVServer implements BaseServer {
 
     private static final Logger LOGGER = Logger.getLogger(KVServer.class.getName());
     private static final int DEFAULT_THREAD_POOL_SIZE = 10;
@@ -19,12 +22,14 @@ public class KVServer {
     private ExecutorService threadPool;
     private ServerSocket serverSocket;
     private volatile boolean running = false;
+    private final ClientHandlerFactory handlerFactory;
 
     public KVServer(int port) {
-        this(port, DEFAULT_THREAD_POOL_SIZE);
+        this(port, DEFAULT_THREAD_POOL_SIZE, new DefaultClientHandlerFactory());
     }
 
-    public KVServer(int port, int threadPoolSize) {
+    public KVServer(int port, int threadPoolSize, ClientHandlerFactory handlerFactory) {
+        this.handlerFactory = handlerFactory;
         if (port <= 0 || port > 65535) {
             throw new IllegalArgumentException("Port must be between 1 and 65535");
         }
@@ -45,7 +50,6 @@ public class KVServer {
             serverSocket = new ServerSocket(port);
             running = true;
             LOGGER.info("Server started on port " + port);
-
             acceptConnectionLoop();
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to start server on port " + port, e);
@@ -57,7 +61,7 @@ public class KVServer {
         while (running) {
             try {
                 Socket clientSocket = serverSocket.accept();
-                threadPool.execute(new ClientHandler(clientSocket));
+                threadPool.execute(this.handlerFactory.createHandler(clientSocket));
             } catch (IOException e) {
                 if (running) {
                     LOGGER.log(Level.WARNING, "Error accepting client connection", e);

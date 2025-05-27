@@ -1,8 +1,8 @@
-package com.kvdatabase.server;
+package com.kvcommon.handler;
 
-import com.kvdatabase.protocol.CommandParser;
-import com.kvdatabase.protocol.KVCommandParser;
-import com.kvdatabase.protocol.SQLCommandParser;
+import com.kvcommon.protocol.CommandParser;
+import com.kvcommon.protocol.KVCommandParser;
+import com.kvcommon.protocol.SQLCommandParser;
 
 import java.io.*;
 import java.net.Socket;

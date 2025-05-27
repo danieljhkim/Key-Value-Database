@@ -1,4 +1,4 @@
-package com.kvdatabase.protocol;
+package com.kvcommon.protocol;
 
 import com.kvdatabase.repository.BaseRepository;
 import com.kvdatabase.repository.KVStoreRepository;
@@ -19,12 +19,16 @@ public class KVCommandParser extends CommandParser {
         SHUTDOWN/QUIT/TERMINATE - Close the database connection
         HELP/INFO - Display this help message""";
 
+    public KVCommandParser(CommandExecutor executor) {
+        super(executor);
+    }
+
     public KVCommandParser(BaseRepository store) {
-        super(store);
+        super(new BaseRepositoryAdapter(store));
     }
 
     public KVCommandParser() {
-        super(new KVStoreRepository());
+        super(new BaseRepositoryAdapter(new KVStoreRepository()));
     }
 
     @Override
@@ -45,31 +49,31 @@ public class KVCommandParser extends CommandParser {
 
     private String handleSet(String[] parts) {
         if (parts.length != 3) return "ERR: Usage: SET key value";
-        return String.valueOf(dataSource.put(parts[1], parts[2]));
+        return String.valueOf(executor.put(parts[1], parts[2]));
     }
 
     private String handleGet(String[] parts) {
         if (parts.length != 2) return "ERR: Usage: GET key";
-        return dataSource.get(parts[1]);
+        return executor.get(parts[1]);
     }
 
     private String handleDelete(String[] parts) {
         if (parts.length != 2) return "ERR: Usage: DEL key";
-        return String.valueOf(dataSource.delete(parts[1]));
+        return String.valueOf(executor.delete(parts[1]));
     }
 
     private String handleExists(String[] parts) {
         if (parts.length != 2) return "ERR: Usage: EXISTS key";
-        return dataSource.exists(parts[1]) ? "1" : "0";
+        return executor.exists(parts[1]) ? "1" : "0";
     }
 
     private String handleDrop() {
-        dataSource.truncate();
+        executor.truncate();
         return "OK";
     }
 
     private String handleShutdown() {
-        dataSource.shutdown();
+        executor.shutdown();
         return "OK";
     }
 

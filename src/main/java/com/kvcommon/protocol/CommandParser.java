@@ -1,20 +1,26 @@
-package com.kvdatabase.protocol;
-
-import com.kvdatabase.repository.BaseRepository;
+package com.kvcommon.protocol;
 
 public abstract class CommandParser {
 
     static final String OK_RESPONSE = "OK";
     static final String ERROR_RESPONSE = "ERROR";
     static final String NIL_RESPONSE = "(nil)";
-    protected BaseRepository dataSource;
+    protected CommandExecutor executor;
 
-    public CommandParser(BaseRepository repo) {
-        this.dataSource = repo;
+    public CommandParser(CommandExecutor executor) {
+        this.executor = executor;
     }
 
     public CommandParser() {
         this(null);
+    }
+
+    public void setCommandExecutor(CommandExecutor executor) {
+        this.executor = executor;
+    }
+
+    public CommandExecutor getCommandExecutor() {
+        return executor;
     }
 
     abstract String getHelpText();

@@ -2,7 +2,7 @@ package com.kvdatabase.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kvcommon.config.SystemConfig;
-import com.kvdatabase.annotations.Timer;
+import com.kvcommon.annotations.Timer;
 import com.kvdatabase.persistence.FilePersistenceManager;
 import com.kvdatabase.persistence.PersistenceManager;
 
