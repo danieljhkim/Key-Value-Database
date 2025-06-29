@@ -1,21 +1,21 @@
 #!/bin/bash
-# run_server.sh - Script to start the KV Server
+
+# run_server.sh - Script to start a single KV Node Server
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-# Project directory is one level up from the scripts directory
-PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )"
 
-# Define server class
-SERVER_CLASS="com.kvdatabase.Application"
+PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )/kv.server"
 
-# Check if Maven is installed
-if ! command -v mvn &> /dev/null; then
-  echo "Maven is not installed. Please install Maven first."
+CLIENT_JAR="$PROJECT_DIR/target/kv.server-1.0-SNAPSHOT.jar"
+
+# Check if jar exists
+if [ ! -f "$CLIENT_JAR" ]; then
+  echo "Client JAR not found: $CLIENT_JAR"
+  echo "Please build the client first using: mvn package -f $PROJECT_DIR/pom.xml"
   exit 1
 fi
 
-# Change to project directory and start the server
-cd "$PROJECT_DIR" || exit 1
-echo "Starting KVServer from $PROJECT_DIR..."
-mvn exec:java -Dexec.mainClass="$SERVER_CLASS"
+# Start server in foreground
+echo "Starting KV Server..."
+java -jar "$CLIENT_JAR"

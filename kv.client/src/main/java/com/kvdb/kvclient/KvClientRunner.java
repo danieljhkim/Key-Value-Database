@@ -5,7 +5,7 @@ import com.kvdb.kvcommon.config.SystemConfig;
 
 public class KvClientRunner {
     private static final String DEFAULT_HOST = "localhost";
-    private static final int DEFAULT_PORT = 6379;
+    private static final int DEFAULT_PORT = 7000;
 
     public static void main(String[] args) {
         SystemConfig config = SystemConfig.getInstance();

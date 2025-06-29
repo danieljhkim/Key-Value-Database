@@ -1,18 +1,15 @@
 #!/bin/bash
 
-# run_cluster.sh - Script to start the KV Cluster Server
+# run_cluster.sh - Script to start the KV Cluster Server - make sure to package the project first
 
 # Get the directory where the script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Project directory is one level up from the scripts directory
 PROJECT_DIR="$( cd "$SCRIPT_DIR/.." && pwd )/kv.coordinator"
 
-# Paths
 CLUSTER_SERVER_JAR="$PROJECT_DIR/target/kv.coordinator-1.0-SNAPSHOT.jar"
 CONFIG_FILE="$PROJECT_DIR/src/main/resources/cluster-config.yaml"
 
-# Ensure logs directory exists
 mkdir -p "$PROJECT_DIR/logs"
 
 # Check if the configuration file exists
