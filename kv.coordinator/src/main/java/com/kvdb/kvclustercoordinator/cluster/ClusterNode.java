@@ -9,12 +9,16 @@ public class ClusterNode {
     public boolean isGrpc;
     private boolean isRunning = false;
 
-    public ClusterNode(String id, String host, int port, boolean useGrpc) {
+    public ClusterNode(String id, String host, int port, boolean useGrpc, int grpcPort) {
         this.id = id;
         this.host = host;
         this.port = port;
         this.isGrpc = useGrpc;
-        this.client = useGrpc ? new GrpcClusterNodeClient(host, port) : new HttpClusterNodeClient(host, port);
+        this.client = useGrpc ? new GrpcClusterNodeClient(host, grpcPort) : new HttpClusterNodeClient(host, port);
+    }
+
+    public ClusterNode(String id, String host, int port) {
+        this(id, host, port, false, 0);
     }
 
     public String getId() {
