@@ -10,9 +10,12 @@ public class GrpcClusterNodeClient implements ClusterNodeClient {
     private final KVServiceGrpc.KVServiceBlockingStub stub;
 
     public GrpcClusterNodeClient(String host, int port) {
-        this.channel = ManagedChannelBuilder.forAddress(host, port)
-                .usePlaintext()
-                .build();
+        // Explicitly use the dns scheme to bypass the resolver selection issue
+        io.grpc.internal.DnsNameResolverProvider provider =
+                new io.grpc.internal.DnsNameResolverProvider();
+        io.grpc.NameResolverRegistry.getDefaultRegistry().register(provider);
+
+        this.channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
         this.stub = KVServiceGrpc.newBlockingStub(channel);
     }
 

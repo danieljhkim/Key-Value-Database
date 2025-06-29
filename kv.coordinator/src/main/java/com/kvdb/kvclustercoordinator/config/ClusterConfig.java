@@ -49,21 +49,29 @@ public class ClusterConfig {
     private void loadConfig(InputStream input) {
         try {
             Yaml yaml = new Yaml();
-            List<Map<String, Object>> rawList = yaml.load(input);
-            if (rawList == null || rawList.isEmpty()) {
+            Map<String, Object> yamlMap = yaml.load(input);
+
+            if (yamlMap == null || !yamlMap.containsKey("nodes")) {
+                throw new IllegalArgumentException("No 'nodes' section found in configuration");
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> nodesList = (List<Map<String, Object>>) yamlMap.get("nodes");
+
+            if (nodesList.isEmpty()) {
                 throw new IllegalArgumentException("No cluster nodes found in configuration");
             }
-            
-            for (Map<String, Object> item : rawList) {
+
+            for (Map<String, Object> item : nodesList) {
                 validateNodeConfig(item);
                 String id = (String) item.get("id");
                 String host = (String) item.get("host");
                 int port = (Integer) item.get("port");
-                boolean useGrpc = item.getOrDefault("useGrpc", true) instanceof Boolean && 
-                                 (Boolean) item.getOrDefault("useGrpc", true);
+                boolean useGrpc = item.getOrDefault("useGrpc", true) instanceof Boolean &&
+                        (Boolean) item.getOrDefault("useGrpc", true);
                 nodes.add(new ClusterNode(id, host, port, useGrpc));
             }
-            
+
             LOGGER.info("Loaded " + nodes.size() + " cluster nodes from configuration");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to parse cluster configuration", e);

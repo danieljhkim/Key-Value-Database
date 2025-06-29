@@ -16,7 +16,7 @@ import java.util.logging.Logger;
 public class SystemConfig {
 
     private static final Logger LOGGER = Logger.getLogger(SystemConfig.class.getName());
-    private static final String DEFAULT_CONFIG_FILE = "src/main/resources/application.properties";
+    private static final String DEFAULT_CONFIG_FILE = "application.properties";
 
     private static SystemConfig INSTANCE;
     private final Properties properties;
@@ -35,23 +35,34 @@ public class SystemConfig {
     }
 
     private void loadDefaultConfigFile() {
+        // for development
         Path path = Paths.get(DEFAULT_CONFIG_FILE);
         if (Files.exists(path)) {
             try (InputStream input = new FileInputStream(DEFAULT_CONFIG_FILE)) {
                 properties.load(input);
-                LOGGER.info("Loaded default configuration from: " + DEFAULT_CONFIG_FILE);
+                LOGGER.info("Loaded default configuration from filesystem: " + DEFAULT_CONFIG_FILE);
+                return;
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Failed to load default configuration file: " + DEFAULT_CONFIG_FILE, e);
+                LOGGER.log(Level.WARNING, "Failed to load configuration from filesystem", e);
             }
-        } else {
-            LOGGER.warning("Default configuration file not found at: " + DEFAULT_CONFIG_FILE);
+        }
+        // for packaged applications
+        try (InputStream input = getClass().getClassLoader().getResourceAsStream(DEFAULT_CONFIG_FILE)) {
+            if (input != null) {
+                properties.load(input);
+                LOGGER.info("Loaded default configuration from classpath: " + DEFAULT_CONFIG_FILE);
+            } else {
+                LOGGER.warning("Default configuration file not found in classpath: " + DEFAULT_CONFIG_FILE);
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Failed to load configuration from classpath", e);
         }
     }
 
     private void loadEnvSpecificConfigFile() {
         String env = System.getProperty("kvdb.env");
         if (env != null && !env.isEmpty()) {
-            String envConfigFile = "resources/application-" + env + ".properties";
+            String envConfigFile = "resources/application-" + env + ".properties"; // FIXME: Adjust path for packaged applications
             Path envPath = Paths.get(envConfigFile);
 
             if (Files.exists(envPath)) {
@@ -70,7 +81,7 @@ public class SystemConfig {
     public String getConfigFilePath() {
         String env = System.getProperty("kvdb.env");
         if (env != null && !env.isEmpty()) {
-            String envConfigFile = "resources/application-" + env + ".properties";
+            String envConfigFile = "resources/application-" + env + ".properties"; // FIXME: Adjust path for packaged applications
             Path envPath = Paths.get(envConfigFile);
             if (Files.exists(envPath)) {
                 return envConfigFile;

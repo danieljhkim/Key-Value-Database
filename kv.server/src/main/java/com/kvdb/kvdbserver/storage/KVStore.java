@@ -28,7 +28,8 @@ public class KVStore implements KVStorageBase {
 
     private KVStore() {
         TypeReference<Map<String, String>> typeRef = new TypeReference<>() {};
-        String persistenceFilePath = config.getProperty("kvdb.persistence.filepath");
+        String persistenceFilePath = config.getProperty("kvdb.persistence.filepath",
+                System.getProperty("java.io.tmpdir") + "/kvdb-data.dat"); // FIXME: temp fix for persistence file path
         this.persistenceManager = new FilePersistenceManager<>(persistenceFilePath, typeRef);
         loadFromDisk();
         System.out.println(FLUSH_INTERVAL);

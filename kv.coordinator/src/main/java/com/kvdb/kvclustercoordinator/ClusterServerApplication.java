@@ -17,9 +17,10 @@ public class ClusterServerApplication {
 
     private static final Logger LOGGER = Logger.getLogger(ClusterServerApplication.class.getName());
     private static final int DEFAULT_PORT = 7000;
-    private static final String DEFAULT_CONFIG_PATH = "src/main/resources/cluster-config.yaml";
+    private static final String DEFAULT_CONFIG_PATH =  "cluster-config.yaml";
 
     public static void main(String[] args) {
+        // System.setProperty("io.grpc.internal.DnsNameResolverProvider.enable_jndi", "false");
         int port = DEFAULT_PORT;
         String configFilePath = DEFAULT_CONFIG_PATH;
 

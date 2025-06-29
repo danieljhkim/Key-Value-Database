@@ -99,7 +99,7 @@ public class ClusterServer {
 
     private void startClusterNodes(List<ClusterNode> clusterNodes) {
         String coordinatorDir = System.getProperty("user.dir");
-        String serverJarPath = coordinatorDir + "/../kv.server/target/kv.server-1.0-SNAPSHOT.jar"; //TODO:: Adjust path dynamically
+        String serverJarPath = coordinatorDir + "/kv.server/target/kv.server-1.0-SNAPSHOT.jar"; //TODO:: Adjust path dynamically
 
         for (ClusterNode node : clusterNodes) {
             try {
