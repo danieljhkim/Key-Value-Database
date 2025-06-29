@@ -7,6 +7,7 @@ import com.kvdb.kvclustercoordinator.protocol.KVCommandParser;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -62,9 +63,9 @@ public class ClusterClientHandler implements Runnable {
 
                 parts[0] = parts[0].toUpperCase();
                 LOGGER.fine("Command received: " + command);
-
                 if (parts[0].equals(KV_COMMAND)) {
-                    String response = commandParser.executeCommand(parts, executor);
+                    String[] segment = Arrays.copyOfRange(parts, 1, parts.length);
+                    String response = commandParser.executeCommand(segment, executor);
                     writer.write(response + "\n");
                     writer.flush();
                 } else {

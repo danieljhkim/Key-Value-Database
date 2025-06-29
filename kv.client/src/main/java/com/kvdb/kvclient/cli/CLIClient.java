@@ -70,7 +70,6 @@ public class CLIClient {
             System.out.println("Connected to KV Database on " + host + ":" + port);
             System.out.println(Constants.LINE_SEPARATOR);
             System.out.println(Constants.KV_HELP_MESSAGE);
-            System.out.println(Constants.SQL_HELP_MESSAGE);
             System.out.println(Constants.LINE_SEPARATOR);
             return true;
         } catch (ConnectException e) {
