@@ -1,0 +1,88 @@
+package com.kvdb.kvclustercoordinator.handler;
+
+
+import com.kvdb.kvclustercoordinator.cluster.ClusterNode;
+import com.kvdb.kvclustercoordinator.protocol.ClusterCommandExecutor;
+import com.kvdb.kvclustercoordinator.protocol.KVCommandParser;
+
+import java.io.*;
+import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * Handles client connections using gRPC for communication with cluster nodes.
+ */
+public class ClusterClientHandler implements Runnable {
+
+    private static final Logger LOGGER = Logger.getLogger(ClusterClientHandler.class.getName());
+    private static final String KV_COMMAND = "KV";
+
+    private final Socket clientSocket;
+    private final String clientAddress;
+    private final KVCommandParser commandParser = new KVCommandParser();
+    private final ClusterCommandExecutor executor;
+
+    public ClusterClientHandler(ClusterNode clusterNode, Socket socket) {
+        this.clientSocket = socket;
+        this.clientAddress = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
+        this.executor = new ClusterCommandExecutor(clusterNode.getClient());
+    }
+
+    @Override
+    public void run() {
+        LOGGER.info("Client connected from " + clientAddress);
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))) {
+            processClientCommands(reader, writer);
+
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Error handling client " + clientAddress, e);
+        } finally {
+            try {
+                clientSocket.close();
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Error closing client socket", e);
+            }
+            executor.shutdown();
+            LOGGER.info("Connection closed with client " + clientAddress);
+        }
+    }
+
+    private void processClientCommands(BufferedReader reader, BufferedWriter writer) throws IOException {
+        String command;
+        while ((command = reader.readLine()) != null) {
+            try {
+                String[] parts = command.split(" ");
+                if (parts.length == 0 || parts[0].isEmpty()) {
+                    sendErrorResponse(writer, "Empty command received");
+                    continue;
+                }
+
+                parts[0] = parts[0].toUpperCase();
+                LOGGER.fine("Command received: " + command);
+
+                if (parts[0].equals(KV_COMMAND)) {
+                    String response = commandParser.executeCommand(parts, executor);
+                    writer.write(response + "\n");
+                    writer.flush();
+                } else {
+                    sendErrorResponse(writer, "commands not supported");
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Error processing command", e);
+                sendErrorResponse(writer, "Internal server error");
+            }
+        }
+    }
+
+    private void sendErrorResponse(BufferedWriter writer, String message) {
+        try {
+            writer.write("ERROR: " + message + "\n");
+            writer.flush();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to send error response", e);
+        }
+    }
+}
