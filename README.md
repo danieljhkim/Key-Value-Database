@@ -55,24 +55,49 @@ KvDB follows a distributed architecture with the following components:
 
 ### Starting the Cluster
 
-Make the scripts executable:
+1. Package the project using Maven:
+
+```bash
+mvn clean package
+````
+
+2. Make the scripts executable:
 
 ```bash
 chmod +x scripts/run_client.sh scripts/run_cluster.sh
 ```
 
-#### Start the Cluster: Coordinator Server and Node Servers
+3. Start the Cluster: Coordinator Server and Node Servers
 
 ```bash
 # bash script to start the coordinator and node servers
 ./scripts/run_cluster.sh
 ```
 
-#### Start the Client CLI
+4. Start the Client CLI
+
+**Option 1**: Use kv.client Java application
 
 ```bash
-# bash script to start the client CLI
 ./scripts/run_client.sh
+```
+
+**Option 2** (recommended): [Use kvcli CLI Go application](./kvcli/README.md)
+```bash
+cd kvcli
+
+go build -o kv
+
+# move the binary PATH
+
+# for unix:
+mv kv /usr/local/bin/
+
+# for windows:
+move kv.exe C:\Windows\System32\
+
+# connect to the cluster
+kv connect --host localhost --port 7000
 ```
 
 ### Client-Server Communication
@@ -92,7 +117,8 @@ chmod +x scripts/run_client.sh scripts/run_cluster.sh
 
 - `KV EXISTS key` - Check if key(s) exist
 - `KV ALL` - Get all key-value pairs (not yet)
-- `KV TRUNCATE/DROP` - Remove all keys from store and disk
+- `KV DROP` - Remove all keys from store and disk
+- `KV SIZE` - Get the number of keys in the store
 - `SAVE` - Save the current state to disk
 
 
@@ -118,10 +144,12 @@ nodes:
     host: localhost
     port: 7001
     isGrpc: true
+    grpcPort: 9001
   - id: node2
     host: localhost
     port: 7002
     isGrpc: true
+    grpcPort: 9002
 ```
 
 ### File-based Persistence
