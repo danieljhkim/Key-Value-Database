@@ -82,7 +82,7 @@ chmod +x scripts/run_client.sh scripts/run_cluster.sh
 ./scripts/run_client.sh
 ```
 
-**Option 2** (recommended): [Use kvcli CLI Go application](./kvcli/README.md)
+**Option 2** (recommended): [Use kvcli CLI Go application](./golang/kvcli/README.md)
 ```bash
 cd kvcli
 
