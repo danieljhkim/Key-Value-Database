@@ -16,12 +16,11 @@ public class Constants {
             "1. KV SET key value - Store a key-value pair.\n" +
             "2. KV GET key - Retrieve the value for a given key.\n" +
             "3. KV DEL key - Remove a key-value pair.\n" +
-            "4. KV EXISTS key - Check if a key exists (returns 1 if exists, 0 if not).\n" +
-            "5. KV SIZE - Return the number of key-value pairs stored.\n" +
-            "6. KV CLEAR - Remove all entries.\n" +
-            "8. KV PING - Check connection.\n" +
-            "9. KV SHUTDOWN/QUIT/TERMINATE - Close the database connection.\n" +
-            "10. KV HELP/INFO - Display this help message.\n";
+//            "4. KV EXISTS key - Check if a key exists (returns 1 if exists, 0 if not).\n" +
+//            "5. KV DROP - Remove all entries.\n" +
+            "6. KV PING - Check connection.\n" +
+            "7. KV QUIT - Close the database connection.\n" +
+            "8. KV HELP - Display this help message.\n";
 
     public static final String LINE_SEPARATOR = "----------------------------------------";
 }
