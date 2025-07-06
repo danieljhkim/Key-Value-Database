@@ -5,6 +5,7 @@ import com.kvdb.kvcommon.config.SystemConfig;
 import com.kvdb.kvcommon.annotations.Timer;
 import com.kvdb.kvdbserver.persistence.FilePersistenceManager;
 import com.kvdb.kvdbserver.persistence.PersistenceManager;
+import com.kvdb.kvdbserver.persistence.WALManager;
 
 import java.io.IOException;
 import java.util.*;
@@ -25,13 +26,14 @@ public class KVStore implements KVStorageBase {
     private static int curFlushInterval = 0;
     private final Map<String, String> store = new ConcurrentHashMap<>();
     private final PersistenceManager<Map<String, String>> persistenceManager;
+    private final WALManager walManager = new WALManager(config.getProperty("kvdb.persistence.wal.filepath", "data/wal.log"));
 
     private KVStore() {
         TypeReference<Map<String, String>> typeRef = new TypeReference<>() {};
-        String persistenceFilePath = config.getProperty("kvdb.persistence.filepath",
-                System.getProperty("java.io.tmpdir") + "/kvdb-data.dat"); // FIXME: temp fix for persistence file path
+        String persistenceFilePath = config.getProperty("kvdb.persistence.filepath");
         this.persistenceManager = new FilePersistenceManager<>(persistenceFilePath, typeRef);
         loadFromDisk();
+        recover();
         System.out.println(FLUSH_INTERVAL);
     }
 
@@ -68,8 +70,8 @@ public class KVStore implements KVStorageBase {
     public boolean set(String key, String value) {
         Objects.requireNonNull(key, "Key cannot be null");
         Objects.requireNonNull(value, "Value cannot be null");
+        walManager.log("SET", key, value);
         store.put(key, value);
-        curFlushInterval++;
         flush();
         return true;
     }
@@ -82,7 +84,7 @@ public class KVStore implements KVStorageBase {
 
     public boolean del(String key) {
         Objects.requireNonNull(key, "Key cannot be null");
-        curFlushInterval++;
+        walManager.log("DEL", key, null);
         flush();
         return store.remove(key) != null;
     }
@@ -95,6 +97,7 @@ public class KVStore implements KVStorageBase {
         LOGGER.info("Clearing the KVStore");
         int sizeBeforeClear = store.size();
         store.clear();
+        walManager.clear();
         saveToDisk();
         return sizeBeforeClear;
     }
@@ -124,11 +127,14 @@ public class KVStore implements KVStorageBase {
     }
 
     public void flush() {
+        curFlushInterval++;
         if (ENABLE_AUTO_FLUSH && curFlushInterval >= FLUSH_INTERVAL) {
             LOGGER.info("Auto-flushing data to disk");
             saveToDisk();
+            walManager.clear();
         }
     }
+
     @Override
     public void shutdown() {
         saveToDisk();
@@ -142,6 +148,21 @@ public class KVStore implements KVStorageBase {
     public void initialize(String tableName) {
         LOGGER.info("Initializing KVStore with table name: " + tableName);
         // TODO: implement multi-table support if needed
+    }
+
+    public void recover() {
+        List<String[]> ops = walManager.replay();
+        for (String[] op : ops) {
+            String operation = op[0];
+            String key = op[1];
+            String value = op.length > 2 ? op[2] : null;
+
+            switch (operation) {
+                case "SET": store.put(key, value); break;
+                case "DEL": store.remove(key); break;
+                default: System.err.println("Unknown op: " + operation);
+            }
+        }
     }
 
     public String getTableName() {

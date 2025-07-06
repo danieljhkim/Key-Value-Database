@@ -40,22 +40,22 @@ public class SystemConfig {
         if (Files.exists(path)) {
             try (InputStream input = new FileInputStream(DEFAULT_CONFIG_FILE)) {
                 properties.load(input);
-                LOGGER.info("Loaded default configuration from filesystem: " + DEFAULT_CONFIG_FILE);
+                LOGGER.info("Loaded development default configuration from filesystem: " + DEFAULT_CONFIG_FILE);
                 return;
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Failed to load configuration from filesystem", e);
+                LOGGER.log(Level.WARNING, "Failed to load development configuration from filesystem", e);
             }
         }
         // for packaged applications
         try (InputStream input = getClass().getClassLoader().getResourceAsStream(DEFAULT_CONFIG_FILE)) {
             if (input != null) {
                 properties.load(input);
-                LOGGER.info("Loaded default configuration from classpath: " + DEFAULT_CONFIG_FILE);
+                LOGGER.info("Loaded package default configuration from classpath: " + DEFAULT_CONFIG_FILE);
             } else {
                 LOGGER.warning("Default configuration file not found in classpath: " + DEFAULT_CONFIG_FILE);
             }
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, "Failed to load configuration from classpath", e);
+            LOGGER.log(Level.WARNING, "Failed to load packaged configuration from classpath", e);
         }
     }
 
