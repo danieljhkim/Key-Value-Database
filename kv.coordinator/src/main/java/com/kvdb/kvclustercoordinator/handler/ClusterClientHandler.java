@@ -1,6 +1,7 @@
 package com.kvdb.kvclustercoordinator.handler;
 
 
+import com.kvdb.kvclustercoordinator.cluster.ClusterManager;
 import com.kvdb.kvclustercoordinator.cluster.ClusterNode;
 import com.kvdb.kvclustercoordinator.protocol.ClusterCommandExecutor;
 import com.kvdb.kvclustercoordinator.protocol.KVCommandParser;
@@ -21,13 +22,15 @@ public class ClusterClientHandler implements Runnable {
 
     private final Socket clientSocket;
     private final String clientAddress;
-    private final KVCommandParser commandParser = new KVCommandParser();
-    private final ClusterCommandExecutor executor;
+    private final KVCommandParser commandParser;
+    private final ClusterManager clusterManager;
 
-    public ClusterClientHandler(ClusterNode clusterNode, Socket socket) {
+
+    public ClusterClientHandler(Socket socket, ClusterManager clusterManager) {
+        this.commandParser = new KVCommandParser();
         this.clientSocket = socket;
         this.clientAddress = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
-        this.executor = new ClusterCommandExecutor(clusterNode.getClient());
+        this.clusterManager = clusterManager;
     }
 
     @Override
@@ -46,7 +49,6 @@ public class ClusterClientHandler implements Runnable {
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, "Error closing client socket", e);
             }
-            executor.shutdown();
             LOGGER.info("Connection closed with client " + clientAddress);
         }
     }
@@ -64,10 +66,18 @@ public class ClusterClientHandler implements Runnable {
                 parts[0] = parts[0].toUpperCase();
                 LOGGER.fine("Command received: " + command);
                 if (parts[0].equals(KV_COMMAND)) {
-                    String[] segment = Arrays.copyOfRange(parts, 1, parts.length);
-                    String response = commandParser.executeCommand(segment, executor);
+
+                    ClusterNode node = clusterManager.getShardedNode(parts);
+                    if (node == null) {
+                        sendErrorResponse(writer, "Node not found");
+                        continue;
+                    }
+                    LOGGER.info("Routing command to node: " + node.getId());
+                    ClusterCommandExecutor executor = new ClusterCommandExecutor(node.getClient());
+                    String response = commandParser.executeCommand(Arrays.copyOfRange(parts, 1, parts.length), executor);
                     writer.write(response + "\n");
                     writer.flush();
+                    executor.shutdown();
                 } else {
                     sendErrorResponse(writer, "commands not supported");
                 }

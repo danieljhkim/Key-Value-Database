@@ -41,11 +41,6 @@ public class ClusterConfig {
         }
     }
 
-
-    public ClusterConfig(InputStream inputStream) {
-        loadConfig(inputStream);
-    }
-
     private void loadConfig(InputStream input) {
         try {
             Yaml yaml = new Yaml();
@@ -57,7 +52,6 @@ public class ClusterConfig {
 
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> nodesList = (List<Map<String, Object>>) yamlMap.get("nodes");
-
             if (nodesList.isEmpty()) {
                 throw new IllegalArgumentException("No cluster nodes found in configuration");
             }
@@ -97,12 +91,7 @@ public class ClusterConfig {
         }
     }
 
-
     public List<ClusterNode> getNodes() {
         return Collections.unmodifiableList(nodes);
-    }
-
-    public Optional<ClusterNode> getNodeById(String id) {
-        return nodes.stream().filter(n -> n.getId().equals(id)).findFirst();
     }
 }

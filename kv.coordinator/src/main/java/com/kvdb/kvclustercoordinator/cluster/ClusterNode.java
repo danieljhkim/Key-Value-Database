@@ -52,4 +52,10 @@ public class ClusterNode {
     public ClusterNodeClient getClient() {
         return client;
     }
+
+    public void shutdown() {
+        if (client != null) {
+            client.shutdown();
+        }
+    }
 }

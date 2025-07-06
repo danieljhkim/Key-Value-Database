@@ -35,4 +35,9 @@ public class HttpClusterNodeClient implements ClusterNodeClient {
             return null;
         }
     }
+
+    @Override
+    public void shutdown() {
+        System.out.println("HTTP client shutdown not required");
+    }
 }

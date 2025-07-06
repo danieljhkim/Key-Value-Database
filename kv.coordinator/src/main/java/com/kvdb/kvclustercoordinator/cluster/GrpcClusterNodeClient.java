@@ -35,7 +35,7 @@ public class GrpcClusterNodeClient implements ClusterNodeClient {
         SetResponse response = stub.set(request);
         return response.getSuccess();
     }
-
+    @Override
     public void shutdown() {
         channel.shutdown();
     }

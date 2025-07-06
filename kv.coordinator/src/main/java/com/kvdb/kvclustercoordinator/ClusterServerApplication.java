@@ -1,8 +1,10 @@
 package com.kvdb.kvclustercoordinator;
 
-import com.kvdb.kvclustercoordinator.cluster.ClusterNode;
+import com.kvdb.kvclustercoordinator.cluster.ClusterManager;
 import com.kvdb.kvclustercoordinator.config.ClusterConfig;
 import com.kvdb.kvclustercoordinator.server.ClusterServer;
+import com.kvdb.kvclustercoordinator.sharding.BasicShardingStrategy;
+import com.kvdb.kvclustercoordinator.sharding.ShardingStrategy;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +41,9 @@ public class ClusterServerApplication {
         try {
             LOGGER.info("Starting ClusterServer on port " + port + " with config file: " + configFilePath);
             ClusterConfig clusterConfig = new ClusterConfig(configFilePath);
-            ClusterServer clusterServer = new ClusterServer(port, clusterConfig);
+            ShardingStrategy basicSharding = new BasicShardingStrategy();
+            ClusterManager clusterManager = new ClusterManager(clusterConfig, basicSharding);
+            ClusterServer clusterServer = new ClusterServer(port, clusterManager);
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 LOGGER.info("Shutting down ClusterServer...");
