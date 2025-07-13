@@ -1,0 +1,36 @@
+# docker-compose up --build
+# docker-compose down
+# docker exec -it kvdb-cli /bin/sh
+
+services:
+
+  coordinator:
+    build:
+      context: ./kv.coordinator
+    container_name: kvdb-coordinator
+    ports:
+      - "5000:5000"
+    networks:
+      - kvdb-net
+
+  node1:
+    build:
+      context: ./kv.server
+    container_name: kvdb-server
+    ports:
+      - "5001:5001"
+    networks:
+      - kvdb-net
+
+  cli:
+    build:
+      context: ./golang/kvcli
+    container_name: kvdb-cli
+    stdin_open: true      # For interactive CLI input
+    tty: true             # Keeps terminal open
+    networks:
+      - kvdb-net
+
+networks:
+  kvdb-net:
+    driver: bridge
